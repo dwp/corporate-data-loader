@@ -1,6 +1,6 @@
-# dataworks-repo-template
+# corporate-data-loader
 
-## Description
+## corporate_data_loader
 
 This repo contains Makefile to fit the standard pattern.
 This repo is a base to create new non-Terraform repos, adding the githooks submodule, making the repo ready for use.
