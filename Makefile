@@ -1,40 +1,24 @@
-SHELL:=bash
+AWS_READY=^Ready\.$
 
-default: help
 
-.PHONY: help
-help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+python-image:
+	@{ \
+  		cd ./resources/containers/python; \
+  		docker build --tag dwp-python:latest .; \
+	}
 
-.PHONY: bootstrap
-bootstrap: ## Bootstrap local environment for first use
-	@make git-hooks
+aws-init-image: python-image
+	docker-compose build aws-init
 
-.PHONY: git-hooks
-git-hooks: ## Set up hooks in .githooks
-	@git submodule update --init .githooks ; \
-	git config core.hooksPath .githooks \
+aws: ## Bring up localstack container.
+	docker-compose up -d aws
+	@{ \
+		while ! docker logs aws 2> /dev/null | grep -q $(AWS_READY); do \
+			echo Waiting for aws.; \
+			sleep 2; \
+		done; \
+	}
+	echo aws container is up.
 
-local-build: ## Build with gradle
-	gradle :unit build -x test
-
-local-dist: ## Assemble distribution files in build/dist with gradle
-	gradle assembleDist
-
-local-test: ## Run the unit tests with gradle
-	gradle --rerun-tasks unit
-
-local-all: local-build local-test local-dist ## Build and test with gradle
-
-integration-test: ## Run the integration tests in a Docker container
-	echo "WIP"
-
-integration-test-equality: ## Run the integration tests in a Docker container
-	echo "WIP"
-
-integration-load-test: ## Run the integration load tests in a Docker container
-	echo "WIP"
-
-.PHONY: integration-all ## Build and Run all the tests in containers from a clean start
-integration-all:
-	echo "WIP"
+aws-init: aws aws-init-image ## Create buckets and objects needed in s3 for the integration tests
+	docker-compose up aws-init

@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+
+  hbase:
+    image: harisekhon/hbase:1.4
+    ports:
+      - 9090:9090
+      - 9095:9095
+      - 2181:2181
+      - 16201:16201
+    container_name: hbase
+
+  aws:
+    image: localstack/localstack:latest
+    ports:
+      - '4563-4584:4563-4584'
+    container_name: aws
+    environment:
+      - SERVICES=emr
+      - LOCALSTACK_API_KEY=3vN4uXRfCz
+
+  aws-init:
+    image: aws-init
+    build: resources/containers/aws_init
+    container_name: aws_init
+    depends_on:
+      - aws
