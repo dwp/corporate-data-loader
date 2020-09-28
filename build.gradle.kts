@@ -10,18 +10,20 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    jcenter()
+    maven(url = "https://jitpack.io")
 }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+    implementation("org.jetbrains.kotlin", "kotlin-reflect", "1.4.0")
     implementation("org.apache.hbase:hbase-client:1.4.13")
     implementation("org.apache.hbase:hbase-server:1.4.13")
     implementation("com.amazonaws:aws-java-sdk-s3:1.11.701")
     implementation("com.amazonaws:aws-java-sdk-core:1.11.701")
     implementation("com.amazonaws:aws-java-sdk-secretsmanager:1.11.819")
+    implementation("com.beust:klaxon:4.0.2")
 }
-
-
 
 configure<JavaPluginConvention> {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -38,4 +40,8 @@ tasks {
     compileTestKotlin {
         kotlinOptions.jvmTarget = "1.8"
     }
+}
+
+configurations.all {
+    exclude(group = "org.slf4j", module = "slf4j-log4j12")
 }

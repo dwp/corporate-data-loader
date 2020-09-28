@@ -1,4 +1,4 @@
-package app.load
+package app.load.mapreduce
 
 import org.apache.hadoop.io.IOUtils
 import org.apache.hadoop.io.LongWritable
