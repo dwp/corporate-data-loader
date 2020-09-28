@@ -17,7 +17,7 @@ services:
       - '4563-4584:4563-4584'
     container_name: aws
     environment:
-      - SERVICES=emr
+      - SERVICES=s3,emr
       - LOCALSTACK_API_KEY=3vN4uXRfCz
 
   aws-init:
@@ -26,3 +26,15 @@ services:
     container_name: aws_init
     depends_on:
       - aws
+
+  mysql:
+    image: mysql:5.7
+    restart: always
+    container_name: mysql
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: "password"
+      MYSQL_DATABASE: "metadatastore"
+      MYSQL_USER: "k2hbwriter"
+      MYSQL_PASSWORD: "password"
