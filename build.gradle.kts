@@ -16,7 +16,11 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("org.apache.hbase:hbase-client:1.4.13")
     implementation("org.apache.hbase:hbase-server:1.4.13")
+    implementation("com.amazonaws:aws-java-sdk-s3:1.11.701")
+    implementation("com.amazonaws:aws-java-sdk-core:1.11.701")
+    implementation("com.amazonaws:aws-java-sdk-secretsmanager:1.11.819")
 }
+
 
 
 configure<JavaPluginConvention> {
