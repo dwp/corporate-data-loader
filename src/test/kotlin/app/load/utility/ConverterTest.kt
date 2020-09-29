@@ -14,6 +14,7 @@ class ConverterTest : StringSpec({
 
     val converter = Converter()
 
+
     "valid input converts to json" {
         val jsonString = """{"testOne":"test1", "testTwo":2}"""
         val json: JsonObject = converter.convertToJson(jsonString.toByteArray())
