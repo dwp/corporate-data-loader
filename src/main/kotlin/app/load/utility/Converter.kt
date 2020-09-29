@@ -1,21 +1,26 @@
 package app.load.utility
 
 import com.beust.klaxon.JsonObject
+import com.beust.klaxon.KlaxonException
 import com.beust.klaxon.Parser
 import com.beust.klaxon.lookup
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.zip.CRC32
 
-open class Converter {
+class Converter {
 
     fun convertToJson(body: ByteArray): JsonObject {
-        val parser: Parser = Parser.default()
-        val stringBuilder: StringBuilder = StringBuilder(String(body))
-        return parser.parse(stringBuilder) as JsonObject
+        try {
+            val parser: Parser = Parser.default()
+            val stringBuilder: StringBuilder = StringBuilder(String(body))
+            return parser.parse(stringBuilder) as JsonObject
+        } catch (e: KlaxonException) {
+            logger.warn("Error while parsing json", "cause", e.message?:"")
+            throw IllegalArgumentException("Cannot parse invalid JSON")
+        }
     }
 
     fun sortJsonByKey(unsortedJson: JsonObject): String {
@@ -27,27 +32,16 @@ open class Converter {
     fun generateFourByteChecksum(input: String): ByteArray {
         val bytes = input.toByteArray()
         val checksum = CRC32()
-
         checksum.update(bytes, 0, bytes.size)
-
         return ByteBuffer.allocate(4).putInt(checksum.value.toInt()).array()
     }
 
-    fun encodeToBase64(input: String): String {
-        return Base64.getEncoder().encodeToString(input.toByteArray())
-    }
-
-    fun decodeFromBase64(input: String): String {
-        val decodedBytes: ByteArray = Base64.getDecoder().decode(input)
-        return String(decodedBytes)
-    }
-
-    open fun getTimestampAsLong(timeStampAsStr: String?, timeStampPattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZ"): Long {
+    fun getTimestampAsLong(timeStampAsStr: String?, timeStampPattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZ"): Long {
         val df = SimpleDateFormat(timeStampPattern)
         return df.parse(timeStampAsStr).time
     }
 
-    open fun getLastModifiedTimestamp(json: JsonObject?): Pair<String, String> {
+    fun getLastModifiedTimestamp(json: JsonObject?): Pair<String, String> {
         val epoch = "1980-01-01T00:00:00.000+0000"
         val lastModifiedTimestampStr = json?.lookup<String?>("message._lastModifiedDateTime")?.get(0)
         if (!lastModifiedTimestampStr.isNullOrBlank()) {
@@ -62,7 +56,16 @@ open class Converter {
         return Pair(epoch, "epoch")
     }
 
+    fun encodeToBase64(input: String): String {
+        return Base64.getEncoder().encodeToString(input.toByteArray())
+    }
+
+    fun decodeFromBase64(input: String): String {
+        val decodedBytes: ByteArray = Base64.getDecoder().decode(input)
+        return String(decodedBytes)
+    }
+
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(Converter::class.toString())
+        val logger = LoggerFactory.getLogger(Converter::class.java.toString())
     }
 }

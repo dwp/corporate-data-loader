@@ -16,6 +16,8 @@ services:
     ports:
       - '4563-4584:4563-4584'
     container_name: aws
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - SERVICES=s3,emr
       - LOCALSTACK_API_KEY=3vN4uXRfCz
