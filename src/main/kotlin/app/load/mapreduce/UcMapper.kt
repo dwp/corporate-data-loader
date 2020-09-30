@@ -12,10 +12,13 @@ import org.apache.hadoop.mapreduce.Mapper
 
 class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
 
-    override fun map(key: LongWritable, value: Text, context: Context) {
+    public override fun map(key: LongWritable, value: Text, context: Context) {
         val validBytes = bytes(value)
         val json = convertor.convertToJson(validBytes)
-        hKey(json)?.let { hkey -> context.write(hkey, keyValue(hkey, json, validBytes)) }
+        hKey(json)?.let { hkey ->
+            println("========================> '${String(hkey.get())}'")
+            context.write(hkey, keyValue(hkey, json, validBytes))
+        }
     }
 
     private fun hKey(json: JsonObject): ImmutableBytesWritable? =

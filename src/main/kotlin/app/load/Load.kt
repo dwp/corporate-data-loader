@@ -1,6 +1,7 @@
 package app.load
 
-import app.load.configurations.LoadConfiguration
+import app.load.configurations.CorporateMemoryConfiguration
+import app.load.configurations.MapReduceConfiguration
 import app.load.mapreduce.UcInputFormat
 import app.load.mapreduce.UcMapper
 import app.load.repositories.S3Repository
@@ -22,7 +23,7 @@ fun main() {
     HBaseConfiguration.create().also { configuration ->
         jobInstance(configuration).also { job ->
             ConnectionFactory.createConnection(configuration).use { connection ->
-                val targetTable = tableName(LoadConfiguration.HBase.table)
+                val targetTable = tableName(CorporateMemoryConfiguration.table)
                 connection.getTable(targetTable).use { table ->
                     HFileOutputFormat2.configureIncrementalLoad(job, table, connection.getRegionLocator(targetTable))
                 }
@@ -34,10 +35,10 @@ fun main() {
                         .forEach { path -> FileInputFormat.addInputPath(job, path) }
             }
 
-            FileOutputFormat.setOutputPath(job, Path(LoadConfiguration.MapReduce.outputDirectory))
+            FileOutputFormat.setOutputPath(job, Path(MapReduceConfiguration.outputDirectory))
             job.waitForCompletion(true)
             with (LoadIncrementalHFiles(configuration)) {
-                run(arrayOf(LoadConfiguration.MapReduce.outputDirectory, LoadConfiguration.HBase.table))
+                run(arrayOf(MapReduceConfiguration.outputDirectory, CorporateMemoryConfiguration.table))
             }
         }
     }

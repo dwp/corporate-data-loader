@@ -1,6 +1,7 @@
 package app.load.repositories
 
-import app.load.configurations.LoadConfiguration
+import app.load.configurations.AwsConfiguration
+import app.load.configurations.S3Configuration
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.Protocol
 import com.amazonaws.auth.AWSStaticCredentialsProvider
@@ -37,9 +38,9 @@ class S3Repository(private val amazonS3: AmazonS3, private val bucket: String, p
             }
 
     companion object {
-        fun connect() = S3Repository(amazonS3, LoadConfiguration.S3.bucket, LoadConfiguration.S3.prefix)
+        fun connect() = S3Repository(amazonS3, S3Configuration.bucket, S3Configuration.prefix)
         private val amazonS3: AmazonS3 by lazy {
-            if (LoadConfiguration.Aws.useLocalStack) {
+            if (AwsConfiguration.useLocalStack) {
                 AmazonS3ClientBuilder.standard().run {
                     withEndpointConfiguration(AwsClientBuilder.EndpointConfiguration("http://aws:4566", "eu-west-2"))
                     withClientConfiguration(ClientConfiguration().apply {
@@ -53,9 +54,9 @@ class S3Repository(private val amazonS3: AmazonS3, private val bucket: String, p
             } else {
                 AmazonS3ClientBuilder.standard().run {
                     withCredentials(DefaultAWSCredentialsProviderChain())
-                    withRegion(LoadConfiguration.Aws.region)
+                    withRegion(AwsConfiguration.region)
                     withClientConfiguration(ClientConfiguration().apply {
-                        maxConnections = LoadConfiguration.S3.maxConnections
+                        maxConnections = S3Configuration.maxConnections
                     })
                     build()
                 }
