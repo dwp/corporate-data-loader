@@ -2,17 +2,16 @@ import app.load.configurations.SecretManagerConfiguration
 import com.amazonaws.services.secretsmanager.*
 import com.amazonaws.services.secretsmanager.model.GetSecretValueRequest
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.slf4j.LoggerFactory
+import uk.gov.dwp.dataworks.logging.DataworksLogger
 
 class AWSSecretHelper: SecretHelperInterface {
 
     companion object {
-        val logger = LoggerFactory.getLogger(AWSSecretHelper::class.java.toString())
+        val logger = DataworksLogger.getLogger(AWSSecretHelper::class.java.toString())
     }
 
     override fun getSecret(secretName: String): String? {
-
-        logger.info("Getting value from aws secret manager", "secret_name", secretName)
+        logger.info("Getting value from aws secret manager", "secret_name" to secretName)
 
         val region = SecretManagerConfiguration.properties["region"].toString()
 
@@ -21,7 +20,7 @@ class AWSSecretHelper: SecretHelperInterface {
 
         val getSecretValueResult = client.getSecretValue(getSecretValueRequest)
 
-        logger.debug("Successfully got value from aws secret manager", "secret_name", secretName)
+        logger.debug("Successfully got value from aws secret manager", "secret_name" to secretName)
 
         val secretString = getSecretValueResult.secretString
 

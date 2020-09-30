@@ -24,6 +24,7 @@ dependencies {
     implementation("com.amazonaws:aws-java-sdk-secretsmanager:1.11.819")
     implementation("com.beust:klaxon:4.0.2")
     implementation("mysql:mysql-connector-java:6.0.6")
+    implementation("com.github.dwp:dataworks-common-logging:0.0.5")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.4.2")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:4.2.0")

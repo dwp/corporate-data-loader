@@ -4,7 +4,7 @@ import com.beust.klaxon.JsonObject
 import com.beust.klaxon.KlaxonException
 import com.beust.klaxon.Parser
 import com.beust.klaxon.lookup
-import org.slf4j.LoggerFactory
+import uk.gov.dwp.dataworks.logging.DataworksLogger
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
@@ -18,7 +18,7 @@ class Converter {
             val stringBuilder: StringBuilder = StringBuilder(String(body))
             return parser.parse(stringBuilder) as JsonObject
         } catch (e: KlaxonException) {
-            logger.warn("Error while parsing json", "cause", e.message?:"")
+            logger.error("Error while parsing json", e)
             throw IllegalArgumentException("Cannot parse invalid JSON")
         }
     }
@@ -66,6 +66,6 @@ class Converter {
     }
 
     companion object {
-        val logger = LoggerFactory.getLogger(Converter::class.java.toString())
+        val logger = DataworksLogger.getLogger(Converter::class.java.toString())
     }
 }

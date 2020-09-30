@@ -2,7 +2,7 @@
 import app.load.configurations.MetadataStoreConfiguration
 import app.load.domain.HBasePayload
 import app.load.utility.TextUtils
-import org.slf4j.LoggerFactory
+import uk.gov.dwp.dataworks.logging.DataworksLogger
 import java.sql.Connection
 import java.sql.DriverManager
 import java.util.*
@@ -12,7 +12,7 @@ class MetadataStoreService(private val connection: Connection): AutoCloseable {
 
     fun recordBatch(payloads: List<HBasePayload>) {
         if (MetadataStoreConfiguration.writeToMetadataStore) {
-            logger.info("Putting batch into metadata store", "size", "${payloads.size}")
+            logger.info("Putting batch into metadata store", "size" to "${payloads.size}")
             val timeTaken = measureTimeMillis {
                 with(recordProcessingAttemptStatement) {
                     payloads.forEach {
@@ -26,10 +26,10 @@ class MetadataStoreService(private val connection: Connection): AutoCloseable {
                     executeBatch()
                 }
             }
-            logger.info("Put batch into metadata store", "time_taken", "$timeTaken", "size", "${payloads.size}")
+            logger.info("Put batch into metadata store", "time_taken" to "$timeTaken", "size" to "${payloads.size}")
         }
         else {
-            logger.info("Not putting batch into metadata store", "write_to_metadata_store", "${MetadataStoreConfiguration.writeToMetadataStore}")
+            logger.info("Not putting batch into metadata store", "write_to_metadata_store" to "${MetadataStoreConfiguration.writeToMetadataStore}")
         }
     }
 
@@ -60,7 +60,7 @@ class MetadataStoreService(private val connection: Connection): AutoCloseable {
             return Pair(jdbcUrl, propertiesWithPassword)
         }
 
-        val logger = LoggerFactory.getLogger(MetadataStoreService::class.toString())
+        val logger = DataworksLogger.getLogger(MetadataStoreService::class.toString())
         val textUtils = TextUtils()
     }
 

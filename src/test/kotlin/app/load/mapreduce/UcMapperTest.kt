@@ -4,6 +4,7 @@ import app.load.utility.Converter
 import app.load.utility.MessageParser
 import com.nhaarman.mockitokotlin2.*
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.equality.shouldBeEqualToUsingFields
 import io.kotest.matchers.shouldBe
 import org.apache.hadoop.hbase.KeyValue
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
