@@ -50,14 +50,18 @@ class MetadataStoreService(private val connection: Connection): AutoCloseable {
             return MetadataStoreService(DriverManager.getConnection(url, properties))
         }
 
-        fun connectionProperties(): Pair<String, Properties> {
+        private fun connectionProperties(): Pair<String, Properties> {
             val hostname = MetadataStoreConfiguration.properties["rds.endpoint"]
             val port = MetadataStoreConfiguration.properties["rds.port"]
             val jdbcUrl = "jdbc:mysql://$hostname:$port/${MetadataStoreConfiguration.properties.getProperty("database")}"
-            val secretName = MetadataStoreConfiguration.properties.getProperty("rds.password.secret.name")
             val propertiesWithPassword: Properties = MetadataStoreConfiguration.properties.clone() as Properties
-            propertiesWithPassword["password"] = secretHelper.getSecret(secretName)
+            propertiesWithPassword["password"] = password
             return Pair(jdbcUrl, propertiesWithPassword)
+        }
+
+        private val password by lazy {
+            val secretName = MetadataStoreConfiguration.properties.getProperty("rds.password.secret.name")
+            secretHelper.getSecret(secretName)
         }
 
         val logger = DataworksLogger.getLogger(MetadataStoreService::class.toString())

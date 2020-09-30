@@ -16,7 +16,6 @@ class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
         val validBytes = bytes(value)
         val json = convertor.convertToJson(validBytes)
         hKey(json)?.let { hkey ->
-            println("========================> '${String(hkey.get())}'")
             context.write(hkey, keyValue(hkey, json, validBytes))
         }
     }

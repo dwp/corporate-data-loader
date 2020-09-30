@@ -12,10 +12,12 @@ import java.util.zip.CRC32
 
 class Converter {
 
-    fun convertToJson(body: ByteArray): JsonObject {
+    fun convertToJson(body: ByteArray): JsonObject = convertToJson(String(body))
+
+    fun convertToJson(body: String): JsonObject {
         try {
             val parser: Parser = Parser.default()
-            val stringBuilder: StringBuilder = StringBuilder(String(body))
+            val stringBuilder: StringBuilder = StringBuilder(body)
             return parser.parse(stringBuilder) as JsonObject
         } catch (e: KlaxonException) {
             logger.error("Error while parsing json", e)

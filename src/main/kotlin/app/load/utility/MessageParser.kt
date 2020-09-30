@@ -2,11 +2,11 @@ package app.load.utility
 
 import com.beust.klaxon.JsonObject
 
-open class MessageParser {
+class MessageParser {
 
     private val converter = Converter()
 
-    open fun generateKeyFromRecordBody(body: JsonObject?): Pair<String?, ByteArray> {
+    fun generateKeyFromRecordBody(body: JsonObject?): Pair<String?, ByteArray> {
         val id: JsonObject? = body?.let { getId(it) }
         return if (id == null) Pair(null, ByteArray(0)) else generateKey(id)
     }
