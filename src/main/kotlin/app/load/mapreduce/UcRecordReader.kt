@@ -1,8 +1,11 @@
 package app.load.mapreduce
 
+import app.load.configurations.CorporateMemoryConfiguration
+import app.load.configurations.MetadataStoreConfiguration
 import app.load.domain.HBasePayload
 import app.load.utility.Converter
 import app.load.utility.MessageParser
+import com.beust.klaxon.JsonObject
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.IOUtils
@@ -33,28 +36,32 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
 
     override fun close() {
         IOUtils.closeStream(input)
-        Regex("""(db\.[-\w]+\.[-\w]+)_(\d+)_(\d+)-(\d+)\.jsonl\.gz$""").let { regex ->
-            regex.find(currentPath.toString())?.let { result ->
-                val (topic, partition, firstOffset) = result.destructured
-                LineNumberReader(InputStreamReader(GZIPInputStream(currentFileSystem?.open(currentPath)))).use { reader ->
-
-                    val payloads = reader.lines().map { line ->
-                        with (convertor) {
-                            convertToJson(line).let { json ->
-                                val (_, key) = messageParser.generateKeyFromRecordBody(json)
-                                val (timestamp) = getLastModifiedTimestamp(json)
-                                val version = getTimestampAsLong(timestamp)
-                                HBasePayload(key, version, topic, partition.toInt(), (firstOffset + reader.lineNumber).toLong())
-                            }
-                        }
-                    }.toList()
-
-                    MetadataStoreService.connect().use {
-                        it.recordBatch(payloads)
+        if (MetadataStoreConfiguration.writeToMetadataStore) {
+            Regex(CorporateMemoryConfiguration.topicPattern).let { regex ->
+                regex.find(currentPath.toString())?.let { result ->
+                    val (topic, partition, firstOffset) = result.destructured
+                    LineNumberReader(InputStreamReader(GZIPInputStream(currentFileSystem?.open(currentPath)))).use { reader ->
+                        val payloads = metadataStorePayloads(reader, topic, partition, firstOffset)
+                        MetadataStoreService.connect().use { it.recordBatch(payloads) }
                     }
                 }
             }
         }
+    }
+
+    private fun metadataStorePayloads(reader: LineNumberReader, topic: String, partition: String, firstOffset: String): List<HBasePayload> =
+        reader.lines().map { line ->
+            with(convertor) {
+                hBasePayload(convertToJson(line), topic, partition, firstOffset.toInt() + reader.lineNumber)
+            }
+        }.toList()
+
+
+    private fun Converter.hBasePayload(json: JsonObject, topic: String, partition: String, offset: Int): HBasePayload {
+        val (_, key) = messageParser.generateKeyFromRecordBody(json)
+        val (timestamp) = getLastModifiedTimestamp(json)
+        val version = getTimestampAsLong(timestamp)
+        return HBasePayload(key, version, topic, partition.toInt(), offset.toLong())
     }
 
     override fun getCurrentKey(): LongWritable = LongWritable()

@@ -2,6 +2,10 @@
 import app.load.configurations.MetadataStoreConfiguration
 import app.load.domain.HBasePayload
 import app.load.utility.TextUtils
+import org.apache.commons.dbcp2.DriverManagerConnectionFactory
+import org.apache.commons.dbcp2.PoolableConnectionFactory
+import org.apache.commons.dbcp2.PoolingDataSource
+import org.apache.commons.pool2.impl.GenericObjectPool
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 import java.sql.Connection
 import java.sql.DriverManager
@@ -45,9 +49,15 @@ class MetadataStoreService(private val connection: Connection): AutoCloseable {
         private val isUsingAWS = MetadataStoreConfiguration.useAwsSecrets
         private val secretHelper: SecretHelperInterface =  if (isUsingAWS) AWSSecretHelper() else DummySecretHelper()
 
-        fun connect(): MetadataStoreService {
+        fun connect(): MetadataStoreService = MetadataStoreService(dataSource.connection)
+
+        private val dataSource by lazy {
             val (url, properties) = connectionProperties()
-            return MetadataStoreService(DriverManager.getConnection(url, properties))
+            val connectionFactory = DriverManagerConnectionFactory(url, properties)
+            val poolableConnectionFactory = PoolableConnectionFactory(connectionFactory, null)
+            val connectionPool = GenericObjectPool(poolableConnectionFactory)
+            poolableConnectionFactory.pool = connectionPool
+            PoolingDataSource(connectionPool)
         }
 
         private fun connectionProperties(): Pair<String, Properties> {
