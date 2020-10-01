@@ -9,7 +9,5 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 
 class UcInputFormat: FileInputFormat<LongWritable, Text>() {
     override fun createRecordReader(split: InputSplit, context: TaskAttemptContext): RecordReader<LongWritable, Text> =
-        UcRecordReader().apply {
-            initialize(split, context)
-        }
+        UcRecordReader().apply { initialize(split, context) }
 }
