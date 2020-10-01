@@ -15,26 +15,21 @@ import kotlin.system.measureTimeMillis
 class MetadataStoreService(private val connection: Connection): AutoCloseable {
 
     fun recordBatch(payloads: List<HBasePayload>) {
-        if (MetadataStoreConfiguration.writeToMetadataStore) {
-            logger.info("Putting batch into metadata store", "size" to "${payloads.size}")
-            val timeTaken = measureTimeMillis {
-                with(recordProcessingAttemptStatement) {
-                    payloads.forEach {
-                        setString(1, textUtils.printableKey(it.key))
-                        setLong(2, it.version)
-                        setString(3, it.topic)
-                        setInt(4, it.partition)
-                        setLong(5, it.offset)
-                        addBatch()
-                    }
-                    executeBatch()
+        logger.info("Putting batch into metadata store", "size" to "${payloads.size}")
+        val timeTaken = measureTimeMillis {
+            with(recordProcessingAttemptStatement) {
+                payloads.forEach {
+                    setString(1, textUtils.printableKey(it.key))
+                    setLong(2, it.version)
+                    setString(3, it.topic)
+                    setInt(4, it.partition)
+                    setLong(5, it.offset)
+                    addBatch()
                 }
+                executeBatch()
             }
-            logger.info("Put batch into metadata store", "time_taken" to "$timeTaken", "size" to "${payloads.size}")
         }
-        else {
-            logger.info("Not putting batch into metadata store", "write_to_metadata_store" to "${MetadataStoreConfiguration.writeToMetadataStore}")
-        }
+        logger.info("Put batch into metadata store", "time_taken" to "$timeTaken", "size" to "${payloads.size}")
     }
 
 

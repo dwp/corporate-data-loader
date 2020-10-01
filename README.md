@@ -63,7 +63,7 @@ incrementing this number on each run should do the trick.
 
 Check the logs
 
-First you need to get the application Id which loks something like this `application_1601048545520_0023`, look for the 
+First you need to get the application Id which looks something like this `application_1601048545520_0023`, look for the 
 line like this on the console after the run:
 
     20/10/01 08:45:43 INFO impl.YarnClientImpl: Submitted application application_1601048545520_0023
