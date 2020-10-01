@@ -13,16 +13,19 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.ListObjectsV2Request
 import com.amazonaws.services.s3.model.S3ObjectSummary
 
-class S3Repository(private val amazonS3: AmazonS3, private val bucket: String, private val objectPrefix: String) {
+class S3Repository(private val amazonS3: AmazonS3,
+                   private val bucket: String,
+                   private val objectPrefix: String,
+                   private val topicName: String) {
 
     fun objectSummaries(objectSummaries: MutableList<S3ObjectSummary> = mutableListOf(), nextContinuationToken: String = ""):
-            MutableList<S3ObjectSummary> {
+            List<S3ObjectSummary> {
         val request = listObjectsRequest(nextContinuationToken)
         val objectListing = amazonS3.listObjectsV2(request)
         objectSummaries.addAll(objectListing.objectSummaries)
-
         if (objectListing != null && !objectListing.isTruncated) {
-            return objectSummaries
+            val filenameRe = Regex("""/${topicName}_\d+_\d+-\d+\.jsonl\.gz$""")
+            return objectSummaries.filter { topicName.isBlank() || filenameRe.find(it.key) != null }
         }
 
         return objectSummaries(objectSummaries, objectListing.nextContinuationToken)
@@ -38,7 +41,7 @@ class S3Repository(private val amazonS3: AmazonS3, private val bucket: String, p
             }
 
     companion object {
-        fun connect() = S3Repository(amazonS3, S3Configuration.bucket, S3Configuration.prefix)
+        fun connect() = S3Repository(amazonS3, S3Configuration.bucket, S3Configuration.prefix, S3Configuration.topicName)
         private val amazonS3: AmazonS3 by lazy {
             if (AwsConfiguration.useLocalStack) {
                 AmazonS3ClientBuilder.standard().run {

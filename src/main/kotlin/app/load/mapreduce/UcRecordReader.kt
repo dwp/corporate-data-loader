@@ -40,7 +40,7 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
         IOUtils.closeStream(input)
         logger.info("Completed split", "path" to "${currentPath?.toString()}")
         if (MetadataStoreConfiguration.writeToMetadataStore) {
-            Regex(CorporateMemoryConfiguration.topicPattern).let { regex ->
+            Regex(CorporateMemoryConfiguration.archivedFilePattern).let { regex ->
                 regex.find(currentPath.toString())?.let { result ->
                     val (topic, partition, firstOffset) = result.destructured
                     LineNumberReader(InputStreamReader(GZIPInputStream(currentFileSystem?.open(currentPath)))).use { reader ->

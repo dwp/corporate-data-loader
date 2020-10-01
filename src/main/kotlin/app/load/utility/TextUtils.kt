@@ -11,4 +11,5 @@ class TextUtils {
             } else {
                 String(key)
             }
+
 }
