@@ -4,7 +4,7 @@ import java.io.File
 import java.util.*
 
 object MetadataStoreConfiguration {
-    val writeToMetadataStore = (System.getenv("METADATA_STORE_UPDATE") ?: "true").toBoolean()
+    val writeToMetadataStore = (System.getenv("METADATA_STORE_UPDATE") ?: "false").toBoolean()
     val metadataStoreTable = System.getenv("METADATA_STORE_TABLE") ?: "ucfs"
 
     val useAwsSecrets = (System.getenv("METADATA_STORE_USE_AWS_SECRETS") ?: "true").toBoolean()
