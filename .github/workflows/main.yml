@@ -59,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: build and test
-        run: make integration-all
+        run: gradle build
       - name: java setup
         uses: actions/setup-java@v1
         with:
