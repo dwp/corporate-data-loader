@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.InputSplit
 import org.apache.hadoop.mapreduce.RecordReader
 import org.apache.hadoop.mapreduce.TaskAttemptContext
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
+import uk.gov.dwp.dataworks.logging.DataworksLogger
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.LineNumberReader
@@ -25,6 +26,7 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
 
     override fun initialize(split: InputSplit, context: TaskAttemptContext) =
         (split as FileSplit).path.let { path ->
+            logger.info("Starting split", "path" to path.toString())
             path.getFileSystem(context.configuration).let { fs ->
                 input = BufferedReader(InputStreamReader(GZIPInputStream(fs.open(path))))
                 currentFileSystem = fs
@@ -36,6 +38,7 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
 
     override fun close() {
         IOUtils.closeStream(input)
+        logger.info("Completed split", "path" to "${currentPath?.toString()}")
         if (MetadataStoreConfiguration.writeToMetadataStore) {
             Regex(CorporateMemoryConfiguration.topicPattern).let { regex ->
                 regex.find(currentPath.toString())?.let { result ->
@@ -43,6 +46,8 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
                     LineNumberReader(InputStreamReader(GZIPInputStream(currentFileSystem?.open(currentPath)))).use { reader ->
                         val payloads = metadataStorePayloads(reader, topic, partition, firstOffset)
                         MetadataStoreService.connect().use { it.recordBatch(payloads) }
+                        logger.info("Written split to metadatastore", "path" to "${currentPath?.toString()}",
+                                "topic" to topic, "partition" to "$partition", "first_offset" to "$firstOffset")
                     }
                 }
             }
@@ -82,4 +87,8 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
     private var currentFileSystem: FileSystem? = null
     private val messageParser = MessageParser()
     private val convertor = Converter()
+
+    companion object {
+        private val logger = DataworksLogger.getLogger(UcRecordReader::class.java.toString())
+    }
 }
