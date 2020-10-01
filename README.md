@@ -1,4 +1,4 @@
-# corporate-data-loader
+# The Corporate Data Loader
 
 ## Overview
 The corporate data loader (hereinafter termed 'CDL') is a tool for disaster recovery. It restores previously streamed 
@@ -8,7 +8,9 @@ hbase issue has caused a data loss.
 The data that has been put into HBase by Kafka-to-hbase is additionally written to s3. It is these s3 objects that CDL
 processes and writes into HBase.
 
-The process uses map reduce to prepare HFiles directly, hbase is then directed to adopt these files.
+The process uses [HBases's bulk loading capabilities](https://hbase.apache.org/1.4/book.html#arch.bulk.load) which 
+utilise map-reduce to prepare HFiles directly, hbase is then directed to adopt these files. A useful post on this 
+technique can be found [here](https://blog.cloudera.com/how-to-use-hbase-bulk-loading-and-why/).
 
 Each run of CDL should process files all destined for the same table , so many runs of CDL are needed to perform a full 
 restore of each table's streamed data - one for each table in HBase. This is a requirement of the HBases incremental load 
