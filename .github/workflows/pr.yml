@@ -15,4 +15,6 @@ jobs:
         with:
           java-version: 1.8
       - name: build and test
-        run: gradle build
+        run:
+          export METADATA_STORE_USE_AWS_SECRETS=false
+          gradle build
