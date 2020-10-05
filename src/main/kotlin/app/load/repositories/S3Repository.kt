@@ -23,8 +23,9 @@ class S3Repository(private val amazonS3: AmazonS3,
         val request = listObjectsRequest(nextContinuationToken)
         val objectListing = amazonS3.listObjectsV2(request)
         objectSummaries.addAll(objectListing.objectSummaries)
+
         if (objectListing != null && !objectListing.isTruncated) {
-            val filenameRe = Regex("""/${topicName}_\d+_\d+-\d+\.jsonl\.gz$""")
+            val filenameRe = Regex("""/\Q${topicName}\E_\d+_\d+-\d+\.jsonl\.gz$""")
             return objectSummaries.filter { topicName.isBlank() || filenameRe.find(it.key) != null }
         }
 

@@ -18,7 +18,7 @@ object MetadataStoreConfiguration {
         put("use.aws.secrets", useAwsSecrets)
 
         if (useAwsSecrets) {
-            (System.getenv("K2HB_RDS_CA_CERT_PATH") ?: "/certs/AmazonRootCA1.pem").also {
+            (System.getenv("K2HB_RDS_CA_CERT_PATH") ?: "/opt/emr/AmazonRootCA1.pem").also {
                 put("ssl_ca_path", it)
                 put("ssl_ca", File(it).readText(Charsets.UTF_8))
                 put("ssl_verify_cert", true)

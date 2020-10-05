@@ -33,6 +33,7 @@ class MetadataStoreService(private val connection: Connection): AutoCloseable {
                 executeBatch()
             }
         }
+        println("Put batch into metadata store, time_taken $timeTaken, size: ${payloads.size}")
         logger.info("Put batch into metadata store", "time_taken" to "$timeTaken", "size" to "${payloads.size}")
     }
 
