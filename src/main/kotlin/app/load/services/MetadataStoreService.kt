@@ -2,6 +2,7 @@
 import app.load.configurations.MetadataStoreConfiguration
 import app.load.domain.HBasePayload
 import app.load.utility.TextUtils
+import org.apache.commons.dbcp2.BasicDataSource
 import org.apache.commons.dbcp2.DriverManagerConnectionFactory
 import org.apache.commons.dbcp2.PoolableConnectionFactory
 import org.apache.commons.dbcp2.PoolingDataSource
@@ -11,7 +12,10 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.util.*
 import kotlin.system.measureTimeMillis
+import kotlin.time.ExperimentalTime
+import kotlin.time.hours
 
+@ExperimentalTime
 class MetadataStoreService(private val connection: Connection): AutoCloseable {
 
     fun recordBatch(payloads: List<HBasePayload>) {
@@ -47,12 +51,15 @@ class MetadataStoreService(private val connection: Connection): AutoCloseable {
         fun connect(): MetadataStoreService = MetadataStoreService(dataSource.connection)
 
         private val dataSource by lazy {
-            val (url, properties) = connectionProperties()
-            val connectionFactory = DriverManagerConnectionFactory(url, properties)
-            val poolableConnectionFactory = PoolableConnectionFactory(connectionFactory, null)
-            val connectionPool = GenericObjectPool(poolableConnectionFactory)
-            poolableConnectionFactory.pool = connectionPool
-            PoolingDataSource(connectionPool)
+            val (databaseUrl, databaseProperties) = connectionProperties()
+            BasicDataSource().apply {
+                url = databaseUrl
+                validationQuery = "SELECT count(*) from ${MetadataStoreConfiguration.metadataStoreTable}"
+                maxConnLifetimeMillis = 12.hours.toLongMilliseconds()
+                databaseProperties.forEach { (name, value) ->
+                    addConnectionProperty(name.toString(), value.toString())
+                }
+            }
         }
 
         private fun connectionProperties(): Pair<String, Properties> {

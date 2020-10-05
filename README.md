@@ -2,8 +2,8 @@
 
 ## Overview
 The corporate data loader (hereinafter termed 'CDL') is a tool for disaster recovery. It restores previously streamed 
-data to HBase i.e. records that came over the kafka stream. It would be used where a table inconsistency or some other 
-hbase issue has caused a data loss.
+data to HBase i.e. records that previously came over the kafka stream. It would be used where a table inconsistency or 
+some other hbase issue has caused a data loss.
 
 The data that has been put into HBase by Kafka-to-hbase is additionally written to s3. It is these s3 objects that CDL
 processes and writes into HBase.
@@ -13,8 +13,8 @@ utilise map-reduce to prepare HFiles directly, hbase is then directed to adopt t
 technique can be found [here](https://blog.cloudera.com/how-to-use-hbase-bulk-loading-and-why/).
 
 Each run of CDL should process files all destined for the same table , so many runs of CDL are needed to perform a full 
-restore of each table's streamed data - one for each table in HBase. This is a requirement of the HBases incremental load 
-feature which this application uses.  
+restore of each table's streamed data - one for each table in HBase. This is a requirement of the HBases incremental 
+load feature which this application uses.  
 
 ## Local running
 The application can only run on EMR. Until we have a licence for localstack pro (which provides EMR), testing will be
@@ -58,7 +58,7 @@ Kick off the job
     ./run.sh 10
     
 The script is very rough and ready and only for kicking off dev runs, alter the exported environment variables therein 
-to suit your needs. The number passed in should be chosen to ensure a not existing output directory is used - 
+to suit your needs. The number passed in should be chosen to ensure a non-existent output directory is used - 
 incrementing this number on each run should do the trick.
 
 Check the logs
@@ -93,3 +93,4 @@ Then so see the logs:
 |S3_BUCKET|The bucket containing the objects of previously streamed records|corporatestorage|Will need to be set explicitly for aws deployed instances.  |                                                                                                                                                               
 |S3_MAX_CONNECTIONS|How many concurrent s3 connections to allow|1000|Default probably ok.|                                                                                                                                                                  
 |S3_PREFIX|The path to the files to be restored |data|Should be one tables worth of data, and must not include objects for other tables.|                           
+|TOPIC_NAME|The name of the kafka topic whose files are being reloaded|This is needed to filter the s3 object list down to 1 topics worth of files|
