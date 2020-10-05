@@ -21,6 +21,7 @@ import java.io.InputStreamReader
 import java.io.LineNumberReader
 import java.util.zip.GZIPInputStream
 import kotlin.streams.toList
+import kotlin.time.ExperimentalTime
 
 class UcRecordReader: RecordReader<LongWritable, Text>() {
 
@@ -36,6 +37,7 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
 
     override fun nextKeyValue() = hasNext(input?.readLine())
 
+    @ExperimentalTime
     override fun close() {
         IOUtils.closeStream(input)
         logger.info("Completed split", "path" to "${currentPath?.toString()}")

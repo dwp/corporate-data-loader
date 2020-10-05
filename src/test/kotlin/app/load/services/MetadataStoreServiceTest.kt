@@ -5,8 +5,10 @@ import com.nhaarman.mockitokotlin2.*
 import io.kotest.core.spec.style.StringSpec
 import java.sql.Connection
 import java.sql.PreparedStatement
+import kotlin.time.ExperimentalTime
 
 
+@ExperimentalTime
 class MetadataStoreServiceTest : StringSpec({
 
     "Batch insert" {
