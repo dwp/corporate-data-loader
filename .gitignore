@@ -48,3 +48,6 @@ venv/
 env/
 tmp/
 test-results/*
+gradle/
+gradlew
+gradlew.bat

@@ -58,14 +58,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - name: build and test
-        run: make integration-all
       - name: java setup
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - name: gradle build
-        run: make local-all
+      - name: build and test
+        run: METADATA_STORE_USE_AWS_SECRETS=false gradle build
       - name: Upload app
         uses: actions/upload-artifact@v2
         with:

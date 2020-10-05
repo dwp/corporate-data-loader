@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+
+  hbase:
+    image: harisekhon/hbase:1.4
+    ports:
+      - 9090:9090
+      - 9095:9095
+      - 2181:2181
+      - 16201:16201
+    container_name: hbase
+
+  aws:
+    image: localstack/localstack:latest
+    ports:
+      - '4563-4584:4563-4584'
+    container_name: aws
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - SERVICES=s3,emr
+      - LOCALSTACK_API_KEY=3vN4uXRfCz
+
+  aws-init:
+    image: aws-init
+    build: resources/containers/aws_init
+    container_name: aws_init
+    depends_on:
+      - aws
+
+  mysql:
+    image: mysql:5.7
+    restart: always
+    container_name: mysql
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: "password"
+      MYSQL_DATABASE: "metadatastore"
+      MYSQL_USER: "k2hbwriter"
+      MYSQL_PASSWORD: "password"

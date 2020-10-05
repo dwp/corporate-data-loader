@@ -1,40 +1,55 @@
-SHELL:=bash
+AWS_READY=^Ready\.$
 
-default: help
+python-image:
+	@{ \
+  		cd ./resources/containers/python; \
+  		docker build --tag dwp-python:latest .; \
+	}
 
-.PHONY: help
-help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+aws-init-image: python-image
+	docker-compose build aws-init
 
-.PHONY: bootstrap
-bootstrap: ## Bootstrap local environment for first use
-	@make git-hooks
+aws: ## Bring up localstack container.
+	docker-compose up -d aws
+	@{ \
+		while ! docker logs aws 2> /dev/null | grep -q $(AWS_READY); do \
+			echo Waiting for aws.; \
+			sleep 2; \
+		done; \
+	}
+	echo aws container is up.
 
-.PHONY: git-hooks
-git-hooks: ## Set up hooks in .githooks
-	@git submodule update --init .githooks ; \
-	git config core.hooksPath .githooks \
+aws-init: aws aws-init-image ## Create buckets and objects needed in s3 for the integration tests
+	docker-compose up aws-init
 
-local-build: ## Build with gradle
-	gradle :unit build -x test
+hbase: ## Bring up hbase
+	docker-compose up -d hbase
+	@{ \
+		echo Waiting for HBase.; \
+		while ! docker logs hbase 2>&1 | grep "Master has completed initialization" ; do \
+			sleep 2; \
+			echo Waiting for HBase.; \
+		done; \
+	}
+	echo HBase up.
 
-local-dist: ## Assemble distribution files in build/dist with gradle
-	gradle assembleDist
+mysql:
+	docker-compose up -d mysql
+	@{ \
+		while ! docker logs mysql 2>&1 | grep "^Version" | grep 3306; do \
+			echo Waiting for MySQL.; \
+			sleep 2; \
+		done; \
+	}
+	echo MySQL up.
 
-local-test: ## Run the unit tests with gradle
-	gradle --rerun-tasks unit
+mysql-init: mysql
+	docker exec -i mysql mysql --user=root --password=password metadatastore  < ./resources/containers/mysql/create_table.sql
+	docker exec -i mysql mysql --user=root --password=password metadatastore  < ./resources/containers/mysql/grant_user.sql
 
-local-all: local-build local-test local-dist ## Build and test with gradle
+start-services: hbase mysql-init aws-init
 
-integration-test: ## Run the integration tests in a Docker container
-	echo "WIP"
+stop-services:
+	docker ps -a | awk '{ print $$1 }' | fgrep --color=auto -v CONTAINER | xargs -r docker stop | xargs -r docker rm
 
-integration-test-equality: ## Run the integration tests in a Docker container
-	echo "WIP"
-
-integration-load-test: ## Run the integration load tests in a Docker container
-	echo "WIP"
-
-.PHONY: integration-all ## Build and Run all the tests in containers from a clean start
-integration-all:
-	echo "WIP"
+restart-services: stop-services start-services
