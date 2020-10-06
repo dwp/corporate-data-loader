@@ -6,7 +6,6 @@ plugins {
 }
 
 group = "corporate-data-loader"
-version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
