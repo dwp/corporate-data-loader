@@ -5,8 +5,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "5.1.0"
 }
 
-group = "corporate-data-loader"
-version = "1.0-SNAPSHOT"
+group = "uk.gov.dwp.dataworks"
 
 repositories {
     mavenCentral()
