@@ -60,6 +60,14 @@ class S3RepositoryTest: StringSpec() {
             actual shouldBe targetedSummaries
         }
 
+        "Filters out non-targeted topics with guids" {
+            val (targetedSummaries, filteredSummaries) = mixedWithGuidSummaries(1)
+            val amazonS3 = amazonS3(targetedSummaries, filteredSummaries)
+            val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "db.database.collection")
+            val actual = s3Repository.objectSummaries()
+            actual shouldBe targetedSummaries
+        }
+
         "Doesn't filter if topic is blank" {
             val (targetedSummaries, filteredSummaries) = mixedSummaries(1)
             val amazonS3 = amazonS3(targetedSummaries, filteredSummaries)
@@ -83,15 +91,29 @@ class S3RepositoryTest: StringSpec() {
     private fun mixedSummaries(requestNumber: Int) =
             Pair(objectSummaries(requestNumber), filteredSummaries(requestNumber))
 
+    private fun mixedWithGuidSummaries(requestNumber: Int) =
+            Pair(objectWithGuidSummaries(requestNumber), filteredWithGuidSummaries(requestNumber))
+
     private fun objectSummaries(requestNumber: Int): List<S3ObjectSummary> =
             listOf(objectSummary(requestNumber, 1), objectSummary(requestNumber, 2))
+
+    private fun objectWithGuidSummaries(requestNumber: Int): List<S3ObjectSummary> =
+            listOf(objectWithGuidSummary(requestNumber, 1), objectWithGuidSummary(requestNumber, 2))
 
     private fun filteredSummaries(requestNumber: Int): List<S3ObjectSummary> =
             listOf(filteredSummary(requestNumber, 1), filteredSummary(requestNumber, 2))
 
+    private fun filteredWithGuidSummaries(requestNumber: Int): List<S3ObjectSummary> =
+            listOf(filteredWithGuidSummary(requestNumber, 1), filteredWithGuidSummary(requestNumber, 2))
+
     private fun objectSummary(requestNumber: Int, objectNumber: Int) =
             mock<S3ObjectSummary> {
                 on { key } doReturn key("db.database.collection", requestNumber, objectNumber)
+            }
+
+    private fun objectWithGuidSummary(requestNumber: Int, objectNumber: Int) =
+            mock<S3ObjectSummary> {
+                on { key } doReturn keyWithGuid("db.database.collection", requestNumber, objectNumber)
             }
 
     private fun filteredSummary(requestNumber: Int, objectNumber: Int) =
@@ -99,8 +121,16 @@ class S3RepositoryTest: StringSpec() {
                 on { key } doReturn key("db.filtered_database.filtered_collection", requestNumber, objectNumber)
             }
 
+    private fun filteredWithGuidSummary(requestNumber: Int, objectNumber: Int) =
+            mock<S3ObjectSummary> {
+                on { key } doReturn keyWithGuid("db.filtered_database.filtered_collection", requestNumber, objectNumber)
+            }
+
     private fun key(topic: String, requestNumber: Int, objectNumber: Int) =
             "corporate_storage/2020/01/01/database/collection/${topic}_${requestNumber}_${objectNumber}-${objectNumber + 10}.jsonl.gz"
+
+    private fun keyWithGuid(topic: String, requestNumber: Int, objectNumber: Int) =
+            "corporate_storage/2020/01/01/database/collection/${topic}_${requestNumber}_${objectNumber}-97b3da17-8923-4c16-86c4-73891512545b.jsonl.gz"
 
     private fun objectSummaryResult(requestNumber: Int, truncated: Boolean, summaries: List<S3ObjectSummary>): ListObjectsV2Result =
             mock {
