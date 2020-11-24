@@ -34,16 +34,16 @@ class Load : Configured(), Tool {
                     }
                 }
 
-                S3Repository.connect().let { s3Repository ->
-                    s3Repository.objectSummaries().asSequence().map { "s3://${it.bucketName}/${it.key}" }
-                            .map(::Path).toList()
-                            .forEach { path -> FileInputFormat.addInputPath(job, path) }
-                }
+                val summaries = S3Repository.connect().objectSummaries()
 
-                FileOutputFormat.setOutputPath(job, Path(MapReduceConfiguration.outputDirectory))
-                job.waitForCompletion(true)
-                with(LoadIncrementalHFiles(configuration)) {
-                    run(arrayOf(MapReduceConfiguration.outputDirectory, CorporateMemoryConfiguration.table))
+                if (summaries.isNotEmpty()) {
+                    summaries.asSequence().map { "s3://${it.bucketName}/${it.key}" }
+                            .map(::Path).forEach { path -> FileInputFormat.addInputPath(job, path) }
+                    FileOutputFormat.setOutputPath(job, Path(MapReduceConfiguration.outputDirectory))
+                    job.waitForCompletion(true)
+                    with(LoadIncrementalHFiles(configuration)) {
+                        run(arrayOf(MapReduceConfiguration.outputDirectory, CorporateMemoryConfiguration.table))
+                    }
                 }
             }
         }
