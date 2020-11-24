@@ -37,8 +37,8 @@ class Load : Configured(), Tool {
                 val summaries = S3Repository.connect().objectSummaries()
 
                 if (summaries.isNotEmpty()) {
-                    summaries.asSequence().map { "s3://${it.bucketName}/${it.key}" }
-                            .map(::Path).forEach { path -> FileInputFormat.addInputPath(job, path) }
+                    FileInputFormat.setInputPaths(job, *summaries.asSequence().map { "s3://${it.bucketName}/${it.key}" }
+                            .map(::Path).toList().toTypedArray())
                     FileOutputFormat.setOutputPath(job, Path(MapReduceConfiguration.outputDirectory))
                     job.waitForCompletion(true)
                     with(LoadIncrementalHFiles(configuration)) {
