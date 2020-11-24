@@ -18,7 +18,7 @@ class S3Repository(private val amazonS3: AmazonS3,
                    private val objectPrefix: String,
                    private val topicName: String) {
 
-    fun objectSummaries(objectSummaries: MutableList<S3ObjectSummary> = mutableListOf(), nextContinuationToken: String = ""):
+    tailrec fun objectSummaries(objectSummaries: MutableList<S3ObjectSummary> = mutableListOf(), nextContinuationToken: String = ""):
             List<S3ObjectSummary> {
         val request = listObjectsRequest(nextContinuationToken)
         val objectListing = amazonS3.listObjectsV2(request)
