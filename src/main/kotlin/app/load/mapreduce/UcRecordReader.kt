@@ -15,7 +15,7 @@ import org.apache.hadoop.mapreduce.InputSplit
 import org.apache.hadoop.mapreduce.RecordReader
 import org.apache.hadoop.mapreduce.TaskAttemptContext
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
-import uk.gov.dwp.dataworks.logging.DataworksLogger
+import org.slf4j.LoggerFactory
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.LineNumberReader
@@ -27,11 +27,16 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
 
     override fun initialize(split: InputSplit, context: TaskAttemptContext) =
         (split as FileSplit).path.let { path ->
-            logger.info("Starting split", "path" to path.toString())
-            path.getFileSystem(context.configuration).let { fs ->
-                input = BufferedReader(InputStreamReader(GZIPInputStream(fs.open(path))))
-                currentFileSystem = fs
-                currentPath = path
+            try {
+                logger.info("Starting split '${path}'")
+                path.getFileSystem(context.configuration).let { fs ->
+                    input = BufferedReader(InputStreamReader(GZIPInputStream(fs.open(path))))
+                    currentFileSystem = fs
+                    currentPath = path
+                }
+            } catch (e: Exception) {
+                logger.error("Failed to initialize split '${e.message}'.", e)
+                context.getCounter(Counters.DATAWORKS_FAILED_SPLIT_COUNTER).increment(1)
             }
         }
 
@@ -40,7 +45,7 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
     @ExperimentalTime
     override fun close() {
         IOUtils.closeStream(input)
-        logger.info("Completed split", "path" to "${currentPath?.toString()}")
+        logger.info("Completed split ${currentPath?.toString()}")
         if (MetadataStoreConfiguration.writeToMetadataStore) {
             Regex(CorporateMemoryConfiguration.archivedFilePattern).let { regex ->
                 regex.find(currentPath.toString())?.let { result ->
@@ -48,8 +53,8 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
                     LineNumberReader(InputStreamReader(GZIPInputStream(currentFileSystem?.open(currentPath)))).use { reader ->
                         val payloads = metadataStorePayloads(reader, topic, partition, firstOffset)
                         MetadataStoreService.connect().use { it.recordBatch(payloads) }
-                        logger.info("Written split to metadatastore", "path" to "${currentPath?.toString()}",
-                                "topic" to topic, "partition" to "$partition", "first_offset" to "$firstOffset")
+                        logger.info("Written split to metadatastore ${currentPath?.toString()} " +
+                                "topic $topic, partition $partition, first_offset $firstOffset")
                     }
                 }
             }
@@ -91,6 +96,6 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
     private val convertor = Converter()
 
     companion object {
-        private val logger = DataworksLogger.getLogger(UcRecordReader::class.java.toString())
+        private val logger = LoggerFactory.getLogger(UcRecordReader::class.java)
     }
 }

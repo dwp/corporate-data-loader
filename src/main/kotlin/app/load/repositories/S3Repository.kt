@@ -15,12 +15,15 @@ import com.amazonaws.services.s3.model.S3ObjectSummary
 
 class S3Repository(private val amazonS3: AmazonS3,
                    private val bucket: String,
-                   private val objectPrefix: String,
+                   private val objectPrefixes: String,
                    private val topicName: String) {
 
-    tailrec fun objectSummaries(objectSummaries: MutableList<S3ObjectSummary> = mutableListOf(), nextContinuationToken: String = ""):
+    fun allObjectSummaries()=
+        objectPrefixes.split(",").filter(String::isNotBlank).map(::objectSummaries).flatten()
+
+    tailrec fun objectSummaries(prefix: String, objectSummaries: MutableList<S3ObjectSummary> = mutableListOf(), nextContinuationToken: String = ""):
             List<S3ObjectSummary> {
-        val request = listObjectsRequest(nextContinuationToken)
+        val request = listObjectsRequest(prefix, nextContinuationToken)
         val objectListing = amazonS3.listObjectsV2(request)
         objectSummaries.addAll(objectListing.objectSummaries)
 
@@ -29,10 +32,10 @@ class S3Repository(private val amazonS3: AmazonS3,
             return objectSummaries.filter { topicName.isBlank() || filenameRe.find(it.key) != null }
         }
 
-        return objectSummaries(objectSummaries, objectListing.nextContinuationToken)
+        return objectSummaries(prefix, objectSummaries, objectListing.nextContinuationToken)
     }
 
-    private fun listObjectsRequest(nextContinuationToken: String) =
+    private fun listObjectsRequest(objectPrefix: String, nextContinuationToken: String) =
             ListObjectsV2Request().apply {
                 bucketName = bucket
                 prefix = objectPrefix

@@ -19,7 +19,7 @@ import kotlin.time.hours
 class MetadataStoreService(private val connection: Connection): AutoCloseable {
 
     fun recordBatch(payloads: List<HBasePayload>) {
-        logger.info("Putting batch into metadata store", "size" to "${payloads.size}")
+        logger.info("Putting batch into metadata store, size ${payloads.size}")
         val timeTaken = measureTimeMillis {
             with(recordProcessingAttemptStatement) {
                 payloads.forEach {
@@ -34,7 +34,7 @@ class MetadataStoreService(private val connection: Connection): AutoCloseable {
             }
         }
         println("Put batch into metadata store, time_taken $timeTaken, size: ${payloads.size}")
-        logger.info("Put batch into metadata store", "time_taken" to "$timeTaken", "size" to "${payloads.size}")
+        logger.info("Put batch into metadata store time_taken $timeTaken, size ${payloads.size}")
     }
 
 

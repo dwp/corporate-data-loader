@@ -4,7 +4,7 @@ import com.beust.klaxon.JsonObject
 import com.beust.klaxon.KlaxonException
 import com.beust.klaxon.Parser
 import com.beust.klaxon.lookup
-import uk.gov.dwp.dataworks.logging.DataworksLogger
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
@@ -49,7 +49,7 @@ class Converter {
         if (!lastModifiedTimestampStr.isNullOrBlank()) {
             return Pair(lastModifiedTimestampStr, "_lastModifiedDateTime")
         }
-        
+
         val createdTimestampStr = json?.lookup<String?>("message.createdDateTime")?.get(0)
         if (!createdTimestampStr.isNullOrBlank()) {
             return Pair(createdTimestampStr, "createdDateTime")
@@ -68,6 +68,6 @@ class Converter {
     }
 
     companion object {
-        val logger = DataworksLogger.getLogger(Converter::class.java.toString())
+        private val logger = LoggerFactory.getLogger(Converter::class.java)
     }
 }

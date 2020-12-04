@@ -9,18 +9,26 @@ import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.io.LongWritable
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.mapreduce.Mapper
+import org.slf4j.LoggerFactory
 
 class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
 
+
     public override fun map(key: LongWritable, value: Text, context: Context) {
-        val validBytes = bytes(value)
-        val json = convertor.convertToJson(validBytes)
-        hKey(json)?.let { hkey ->
-            context.write(hkey, keyValue(hkey, json, validBytes))
+        try {
+            val validBytes = bytes(value)
+            val json = convertor.convertToJson(validBytes)
+            hKey(json).let { hkey ->
+                context.write(hkey, keyValue(hkey, json, validBytes))
+                context.getCounter(Counters.DATAWORKS_SUCCEEDED_RECORD_COUNTER).increment(1)
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to map record ${e.message}", e)
+            context.getCounter(Counters.DATAWORKS_FAILED_RECORD_COUNTER).increment(1)
         }
     }
 
-    private fun hKey(json: JsonObject): ImmutableBytesWritable? =
+    private fun hKey(json: JsonObject): ImmutableBytesWritable =
             messageParser.generateKeyFromRecordBody(json).let {(_, key) ->
                 ImmutableBytesWritable().apply { set(key) }
             }
@@ -37,4 +45,8 @@ class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
     private val convertor = Converter()
     private val columnFamily by lazy { Bytes.toBytes("cf") }
     private val columnQualifier by lazy { Bytes.toBytes("record") }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(UcMapper::class.java)
+    }
 }

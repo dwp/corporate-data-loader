@@ -34,7 +34,7 @@ class S3RepositoryTest: StringSpec() {
             }
 
             val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "db.database.collection")
-            val actual = s3Repository.objectSummaries()
+            val actual = s3Repository.allObjectSummaries()
 
             actual shouldBe listOf(objectSummaries1, objectSummaries2, objectSummaries3).flatten()
 
@@ -52,11 +52,40 @@ class S3RepositoryTest: StringSpec() {
             }
         }
 
+        "Iterates over comma delimited prefix" {
+
+            val objectSummaries1 = objectSummaries(1)
+            val result1 = objectSummaryResult(1, false, objectSummaries1)
+
+            val objectSummaries2 = objectSummaries(2)
+            val result2 = objectSummaryResult(2, false, objectSummaries2)
+
+            val requestCaptor = argumentCaptor<ListObjectsV2Request>()
+            val amazonS3 = mock<AmazonS3> {
+                on {
+                    listObjectsV2(requestCaptor.capture())
+                } doReturnConsecutively listOf(result1, result2)
+            }
+
+            val s3Repository = S3Repository(amazonS3, bucket, "prefix1,prefix2", "db.database.collection")
+            val actual = s3Repository.allObjectSummaries()
+
+            actual shouldBe listOf(objectSummaries1, objectSummaries2).flatten()
+
+            requestCaptor.allValues.size shouldBe 2
+
+            requestCaptor.allValues.forEachIndexed { index, request ->
+                request.bucketName shouldBe bucket
+                request.prefix shouldBe "prefix${index + 1}"
+                request.continuationToken shouldBe null
+            }
+        }
+
         "Filters out non-targeted topics" {
             val (targetedSummaries, filteredSummaries) = mixedSummaries(1)
             val amazonS3 = amazonS3(targetedSummaries, filteredSummaries)
             val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "db.database.collection")
-            val actual = s3Repository.objectSummaries()
+            val actual = s3Repository.allObjectSummaries()
             actual shouldBe targetedSummaries
         }
 
@@ -64,7 +93,7 @@ class S3RepositoryTest: StringSpec() {
             val (targetedSummaries, filteredSummaries) = mixedWithGuidSummaries(1)
             val amazonS3 = amazonS3(targetedSummaries, filteredSummaries)
             val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "db.database.collection")
-            val actual = s3Repository.objectSummaries()
+            val actual = s3Repository.allObjectSummaries()
             actual shouldBe targetedSummaries
         }
 
@@ -72,7 +101,7 @@ class S3RepositoryTest: StringSpec() {
             val (targetedSummaries, filteredSummaries) = mixedSummaries(1)
             val amazonS3 = amazonS3(targetedSummaries, filteredSummaries)
             val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "")
-            val actual = s3Repository.objectSummaries()
+            val actual = s3Repository.allObjectSummaries()
             actual shouldBe targetedSummaries + filteredSummaries
         }
     }
