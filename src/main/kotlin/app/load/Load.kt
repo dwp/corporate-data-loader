@@ -20,6 +20,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat
 import org.apache.hadoop.util.Tool
 import org.apache.hadoop.util.ToolRunner
+import org.slf4j.LoggerFactory
+import java.util.*
 
 
 class Load : Configured(), Tool {
@@ -34,15 +36,23 @@ class Load : Configured(), Tool {
                     }
                 }
 
-                val summaries = S3Repository.connect().objectSummaries()
+                val summaries = S3Repository.connect().allObjectSummaries()
 
                 if (summaries.isNotEmpty()) {
                     FileInputFormat.setInputPaths(job, *summaries.asSequence().map { "s3://${it.bucketName}/${it.key}" }
                             .map(::Path).toList().toTypedArray())
                     FileOutputFormat.setOutputPath(job, Path(MapReduceConfiguration.outputDirectory))
-                    job.waitForCompletion(true)
-                    with(LoadIncrementalHFiles(configuration)) {
-                        run(arrayOf(MapReduceConfiguration.outputDirectory, CorporateMemoryConfiguration.table))
+
+                    if (job.waitForCompletion(true)) {
+                        logCounters(job)
+                        with(LoadIncrementalHFiles(configuration)) {
+                            val returnCode = run(arrayOf(MapReduceConfiguration.outputDirectory, CorporateMemoryConfiguration.table))
+                            logger.info("Load HFiles returned code $returnCode")
+                        }
+                    }
+                    else {
+                        logger.info("Job failed")
+                        logCounters(job)
                     }
                 }
             }
@@ -50,8 +60,17 @@ class Load : Configured(), Tool {
         return 0
     }
 
+    private fun logCounters(job: Job) {
+        job.counters.forEach { counterGroup ->
+            counterGroup.forEach { counter ->
+                logger.info("COUNTER ${counter.displayName}: ${counter.value}")
+            }
+        }
+    }
+
     private fun jobInstance(configuration: Configuration) =
-            Job.getInstance(configuration, "HBase corporate data bulk loader").apply {
+            Job.getInstance(configuration,
+                "HBase corporate data loader '${CorporateMemoryConfiguration.table}': '${Date()}'").apply {
                 setJarByClass(UcMapper::class.java)
                 mapperClass = UcMapper::class.java
                 mapOutputKeyClass = ImmutableBytesWritable::class.java
@@ -60,6 +79,10 @@ class Load : Configured(), Tool {
             }
 
     private fun tableName(name: String) = TableName.valueOf(name)
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(Load::class.java)
+    }
 }
 
 fun main(args: Array<String>) {

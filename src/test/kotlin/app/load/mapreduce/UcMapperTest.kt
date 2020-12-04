@@ -4,7 +4,6 @@ import app.load.utility.Converter
 import app.load.utility.MessageParser
 import com.nhaarman.mockitokotlin2.*
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.equality.shouldBeEqualToUsingFields
 import io.kotest.matchers.shouldBe
 import org.apache.hadoop.hbase.KeyValue
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
@@ -38,7 +37,10 @@ class UcMapperTest : StringSpec({
         }
 
         val context =
-                mock<Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>.Context>()
+                mock<Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>.Context> {
+                    on { getCounter(any())} doReturn mock()
+                }
+
         val mapper = UcMapper()
         mapper.map(key, value, context)
 
@@ -52,6 +54,7 @@ class UcMapperTest : StringSpec({
         val idCaptor = argumentCaptor<ImmutableBytesWritable>()
         val bodyCaptor = argumentCaptor<KeyValue>()
         verify(context, times(1)).write(idCaptor.capture(), bodyCaptor.capture())
+        verify(context, times(1)).getCounter(Counters.DATAWORKS_SUCCEEDED_RECORD_COUNTER)
         verifyNoMoreInteractions(context)
         idCaptor.firstValue.get() shouldBe id
         with (bodyCaptor.firstValue) {
