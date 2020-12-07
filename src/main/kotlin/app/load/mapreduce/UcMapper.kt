@@ -14,10 +14,10 @@ import org.slf4j.LoggerFactory
 class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
 
     public override fun map(key: LongWritable, value: Text, context: Context) {
-        val validBytes = bytes(value)
-        val json = convertor.convertToJson(validBytes)
-        val (ordered, hbaseKey) = messageParser.generateKeyFromRecordBody(json)
         try {
+            val validBytes = bytes(value)
+            val json = convertor.convertToJson(validBytes)
+            val (ordered, hbaseKey) = messageParser.generateKeyFromRecordBody(json)
             ordered?.let {
                 hKey(hbaseKey).let { hkey ->
                     context.write(hkey, keyValue(hkey, json, validBytes))
@@ -30,7 +30,7 @@ class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
             }
         } catch (e: Exception) {
             logger.error(
-                "Failed to map record '${MessageParser().getId(json)}', " +
+                "Failed to map record '$value', " +
                         "target table '${context.configuration[targetTableKey]}': '${e.message}' ", e
             )
             context.getCounter(Counters.DATAWORKS_FAILED_RECORD_COUNTER).increment(1)
