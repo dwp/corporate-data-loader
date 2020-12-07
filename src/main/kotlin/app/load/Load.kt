@@ -40,7 +40,7 @@ class Load : Configured(), Tool {
 
                 if (summaries.isNotEmpty()) {
                     FileInputFormat.setInputPaths(job, *summaries.asSequence().map { "s3://${it.bucketName}/${it.key}" }
-                            .map(::Path).toList().toTypedArray())
+                            .map(::Path).toList().distinct().toTypedArray())
                     FileOutputFormat.setOutputPath(job, Path(MapReduceConfiguration.outputDirectory))
 
                     if (job.waitForCompletion(true)) {
