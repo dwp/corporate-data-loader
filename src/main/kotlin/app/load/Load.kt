@@ -38,7 +38,10 @@ class Load : Configured(), Tool {
                 }
 
                 val summaries = S3Repository.connect().allObjectSummaries()
-
+                logger.info("Found ${summaries.size} objects")
+                summaries.forEach {
+                    logger.info("Found object ${it.key}")
+                }
                 if (summaries.isNotEmpty()) {
                     FileInputFormat.setInputPaths(job, *summaries.asSequence().map { "s3://${it.bucketName}/${it.key}" }
                             .map(::Path).toList().distinct().toTypedArray())
