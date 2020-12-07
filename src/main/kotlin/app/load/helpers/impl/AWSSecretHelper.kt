@@ -1,3 +1,6 @@
+package app.load.helpers.impl
+
+import app.load.helpers.SecretHelperInterface
 import app.load.configurations.AwsConfiguration
 import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder
 import com.amazonaws.services.secretsmanager.model.GetSecretValueRequest

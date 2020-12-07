@@ -1,6 +1,5 @@
 package app.load.mapreduce
 
-import app.load.configurations.CorporateMemoryConfiguration
 import app.load.utility.Converter
 import app.load.utility.MessageParser
 import com.beust.klaxon.JsonObject
@@ -13,8 +12,6 @@ import org.apache.hadoop.mapreduce.Mapper
 import org.slf4j.LoggerFactory
 
 class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
-
-
 
     public override fun map(key: LongWritable, value: Text, context: Context) {
         val validBytes = bytes(value)
@@ -32,8 +29,10 @@ class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
                 context.getCounter(Counters.DATAWORKS_FAILED_RECORD_COUNTER).increment(1)
             }
         } catch (e: Exception) {
-            logger.error("Failed to map record '${MessageParser().getId(json)}', " +
-                    "target table '${context.configuration[targetTableKey]}': '${e.message}' ", e)
+            logger.error(
+                "Failed to map record '${MessageParser().getId(json)}', " +
+                        "target table '${context.configuration[targetTableKey]}': '${e.message}' ", e
+            )
             context.getCounter(Counters.DATAWORKS_FAILED_RECORD_COUNTER).increment(1)
         }
     }
@@ -44,7 +43,7 @@ class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
         KeyValue(key.get(), columnFamily, columnQualifier, version(json), bytes)
 
     private fun version(json: JsonObject): Long =
-        with (convertor) { getTimestampAsLong(getLastModifiedTimestamp(json).first) }
+        with(convertor) { getTimestampAsLong(getLastModifiedTimestamp(json).first) }
 
     private fun bytes(value: Text): ByteArray = value.bytes.sliceArray(0 until value.length)
 

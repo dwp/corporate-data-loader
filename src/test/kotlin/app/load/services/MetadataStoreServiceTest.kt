@@ -1,4 +1,4 @@
-
+package app.load.services
 import app.load.domain.HBasePayload
 import app.load.utility.TextUtils
 import com.nhaarman.mockitokotlin2.*

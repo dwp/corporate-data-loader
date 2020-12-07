@@ -3,6 +3,7 @@ package app.load.mapreduce
 import app.load.configurations.CorporateMemoryConfiguration
 import app.load.configurations.MetadataStoreConfiguration
 import app.load.domain.HBasePayload
+import app.load.services.MetadataStoreService
 import app.load.utility.Converter
 import app.load.utility.MessageParser
 import com.beust.klaxon.JsonObject
