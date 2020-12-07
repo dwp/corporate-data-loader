@@ -14,7 +14,7 @@ import java.text.SimpleDateFormat
 
 class UcMapperTest : StringSpec({
 
-    "Does shit" {
+    "Maps to dataworks hbase object spec" {
 
         val date = "2020-09-22T23:16:34.260+0000"
 
@@ -39,6 +39,7 @@ class UcMapperTest : StringSpec({
         val context =
                 mock<Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>.Context> {
                     on { getCounter(any())} doReturn mock()
+                    on { configuration } doReturn mock()
                 }
 
         val mapper = UcMapper()
@@ -55,6 +56,7 @@ class UcMapperTest : StringSpec({
         val bodyCaptor = argumentCaptor<KeyValue>()
         verify(context, times(1)).write(idCaptor.capture(), bodyCaptor.capture())
         verify(context, times(1)).getCounter(Counters.DATAWORKS_SUCCEEDED_RECORD_COUNTER)
+        verify(context, times(1)).configuration
         verifyNoMoreInteractions(context)
         idCaptor.firstValue.get() shouldBe id
         with (bodyCaptor.firstValue) {
