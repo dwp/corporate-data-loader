@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
 
 
+
     public override fun map(key: LongWritable, value: Text, context: Context) {
         val validBytes = bytes(value)
         val json = convertor.convertToJson(validBytes)
@@ -24,15 +25,15 @@ class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
                 hKey(hbaseKey).let { hkey ->
                     context.write(hkey, keyValue(hkey, json, validBytes))
                     context.getCounter(Counters.DATAWORKS_SUCCEEDED_RECORD_COUNTER).increment(1)
-                    logger.info("Successfully mapped '$ordered', target table '${context.configuration["hbase.table"]}'")
+                    logger.info("Successfully mapped '$ordered', target table '${context.configuration[targetTableKey]}'")
                 }
             } ?: run {
-                logger.error("Failed to parse id from '$json', target table '${context.configuration["hbase.table"]}")
+                logger.error("Failed to parse id from '$json', target table '${context.configuration[targetTableKey]}")
                 context.getCounter(Counters.DATAWORKS_FAILED_RECORD_COUNTER).increment(1)
             }
         } catch (e: Exception) {
             logger.error("Failed to map record '${MessageParser().getId(json)}', " +
-                    "target table '${context.configuration["hbase.table"]}': '${e.message}' ", e)
+                    "target table '${context.configuration[targetTableKey]}': '${e.message}' ", e)
             context.getCounter(Counters.DATAWORKS_FAILED_RECORD_COUNTER).increment(1)
         }
     }
@@ -54,5 +55,6 @@ class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
 
     companion object {
         private val logger = LoggerFactory.getLogger(UcMapper::class.java)
+        private const val targetTableKey = "hbase.table"
     }
 }
