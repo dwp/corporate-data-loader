@@ -28,14 +28,14 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
     override fun initialize(split: InputSplit, context: TaskAttemptContext) =
         (split as FileSplit).path.let { path ->
             try {
-                logger.info("Starting split '${path}'")
+                logger.info("Starting split '${path}', target table '${context.configuration["hbase.table"]}'")
                 path.getFileSystem(context.configuration).let { fs ->
                     input = BufferedReader(InputStreamReader(GZIPInputStream(fs.open(path))))
                     currentFileSystem = fs
                     currentPath = path
                 }
             } catch (e: Exception) {
-                logger.error("Failed to initialize split '${e.message}'.", e)
+                logger.error("Failed to initialize split, target table '${context.configuration["hbase.table"]}': '${e.message}'.", e)
                 context.getCounter(Counters.DATAWORKS_FAILED_SPLIT_COUNTER).increment(1)
             }
         }

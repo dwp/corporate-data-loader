@@ -1,5 +1,6 @@
 package app.load.mapreduce
 
+import app.load.configurations.CorporateMemoryConfiguration
 import app.load.utility.Converter
 import app.load.utility.MessageParser
 import com.beust.klaxon.JsonObject
@@ -15,23 +16,28 @@ class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
 
 
     public override fun map(key: LongWritable, value: Text, context: Context) {
+        val validBytes = bytes(value)
+        val json = convertor.convertToJson(validBytes)
+        val (ordered, hbaseKey) = messageParser.generateKeyFromRecordBody(json)
         try {
-            val validBytes = bytes(value)
-            val json = convertor.convertToJson(validBytes)
-            hKey(json).let { hkey ->
-                context.write(hkey, keyValue(hkey, json, validBytes))
-                context.getCounter(Counters.DATAWORKS_SUCCEEDED_RECORD_COUNTER).increment(1)
+            ordered?.let {
+                hKey(hbaseKey).let { hkey ->
+                    context.write(hkey, keyValue(hkey, json, validBytes))
+                    context.getCounter(Counters.DATAWORKS_SUCCEEDED_RECORD_COUNTER).increment(1)
+                    logger.info("Successfully mapped '$ordered', target table '${context.configuration["hbase.table"]}'")
+                }
+            } ?: run {
+                logger.error("Failed to parse id from '$json', target table '${context.configuration["hbase.table"]}")
+                context.getCounter(Counters.DATAWORKS_FAILED_RECORD_COUNTER).increment(1)
             }
         } catch (e: Exception) {
-            logger.error("Failed to map record ${e.message}", e)
+            logger.error("Failed to map record '${MessageParser().getId(json)}', " +
+                    "target table '${context.configuration["hbase.table"]}': '${e.message}' ", e)
             context.getCounter(Counters.DATAWORKS_FAILED_RECORD_COUNTER).increment(1)
         }
     }
 
-    private fun hKey(json: JsonObject): ImmutableBytesWritable =
-            messageParser.generateKeyFromRecordBody(json).let {(_, key) ->
-                ImmutableBytesWritable().apply { set(key) }
-            }
+    private fun hKey(key: ByteArray): ImmutableBytesWritable = ImmutableBytesWritable().apply { set(key) }
 
     private fun keyValue(key: ImmutableBytesWritable, json: JsonObject, bytes: ByteArray): KeyValue =
         KeyValue(key.get(), columnFamily, columnQualifier, version(json), bytes)
