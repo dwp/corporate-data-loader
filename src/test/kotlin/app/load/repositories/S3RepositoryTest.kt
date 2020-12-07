@@ -111,7 +111,7 @@ class S3RepositoryTest: StringSpec() {
 
 
     private fun amazonS3(result: ListObjectsV2Result): AmazonS3 =
-        mock<AmazonS3> {
+        mock {
             on {
                 listObjectsV2(any<ListObjectsV2Request>())
             } doReturn result

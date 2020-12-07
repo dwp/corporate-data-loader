@@ -21,7 +21,7 @@ class S3Repository(private val amazonS3: AmazonS3,
     fun allObjectSummaries()=
         objectPrefixes.split(",").filter(String::isNotBlank).map(::objectSummaries).flatten()
 
-    tailrec fun objectSummaries(prefix: String, objectSummaries: MutableList<S3ObjectSummary> = mutableListOf(), nextContinuationToken: String = ""):
+    private tailrec fun objectSummaries(prefix: String, objectSummaries: MutableList<S3ObjectSummary> = mutableListOf(), nextContinuationToken: String = ""):
             List<S3ObjectSummary> {
         val request = listObjectsRequest(prefix, nextContinuationToken)
         val objectListing = amazonS3.listObjectsV2(request)

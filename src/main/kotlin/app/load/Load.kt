@@ -28,6 +28,7 @@ class Load : Configured(), Tool {
 
     override fun run(args: Array<out String>?): Int {
         conf.also { configuration ->
+            configuration["hbase.table"] = CorporateMemoryConfiguration.table
             jobInstance(configuration).also { job ->
                 ConnectionFactory.createConnection(configuration).use { connection ->
                     val targetTable = tableName(CorporateMemoryConfiguration.table)
@@ -40,9 +41,8 @@ class Load : Configured(), Tool {
 
                 if (summaries.isNotEmpty()) {
                     FileInputFormat.setInputPaths(job, *summaries.asSequence().map { "s3://${it.bucketName}/${it.key}" }
-                            .map(::Path).toList().toTypedArray())
+                            .map(::Path).toList().distinct().toTypedArray())
                     FileOutputFormat.setOutputPath(job, Path(MapReduceConfiguration.outputDirectory))
-
                     if (job.waitForCompletion(true)) {
                         logCounters(job)
                         with(LoadIncrementalHFiles(configuration)) {
