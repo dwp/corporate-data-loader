@@ -1,6 +1,7 @@
 package app.load.configurations
 
 object S3Configuration {
+    val inputList = System.getenv("S3_INPUT_LIST") ?: ""
     val bucket = System.getenv("S3_BUCKET") ?: "corporatestorage"
     val prefix = System.getenv("S3_PREFIX") ?: "data"
     val topicName = System.getenv("TOPIC_NAME") ?: ""

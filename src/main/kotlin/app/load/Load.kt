@@ -2,6 +2,7 @@ package app.load
 
 import app.load.configurations.CorporateMemoryConfiguration
 import app.load.configurations.MapReduceConfiguration
+import app.load.configurations.S3Configuration
 import app.load.mapreduce.UcInputFormat
 import app.load.mapreduce.UcMapper
 import app.load.repositories.S3Repository
@@ -37,14 +38,28 @@ class Load : Configured(), Tool {
                     }
                 }
 
-                val summaries = S3Repository.connect().allObjectSummaries()
-                logger.info("Found ${summaries.size} objects")
-                summaries.forEach {
-                    logger.info("Found object ${it.key}")
+                val inputPaths = if (S3Configuration.inputList.isNotBlank()) {
+                    logger.info("Getting input list from file '${S3Configuration.inputList}'")
+                    S3Repository.connect().pathsFromInputFile()
+                        .map { "s3://${S3Configuration.bucket}/$it" }
+                        .map(::Path)
+                        .toTypedArray()
+                } else {
+                    logger.info("Getting input list from s3")
+                    S3Repository.connect().allObjectSummaries()
+                        .asSequence()
+                        .map { "s3://${it.bucketName}/${it.key}" }
+                        .map(::Path)
+                        .toList().distinct().toTypedArray()
                 }
-                if (summaries.isNotEmpty()) {
-                    FileInputFormat.setInputPaths(job, *summaries.asSequence().map { "s3://${it.bucketName}/${it.key}" }
-                            .map(::Path).toList().distinct().toTypedArray())
+
+                logger.info("Found ${inputPaths.size} objects")
+                inputPaths.forEach {
+                    logger.info("Found object ${it}")
+                }
+
+                if (inputPaths.isNotEmpty()) {
+                    FileInputFormat.setInputPaths(job, *inputPaths)
                     FileOutputFormat.setOutputPath(job, Path(MapReduceConfiguration.outputDirectory))
                     if (job.waitForCompletion(true)) {
                         logCounters(job)
