@@ -1,19 +1,37 @@
 package app.load.repositories
 
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model.GetObjectRequest
 import com.amazonaws.services.s3.model.ListObjectsV2Request
 import com.amazonaws.services.s3.model.ListObjectsV2Result
 import com.amazonaws.services.s3.model.S3ObjectSummary
 import com.nhaarman.mockitokotlin2.*
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
+import java.io.BufferedWriter
+import java.io.File
+import java.io.FileWriter
 
 class S3RepositoryTest: StringSpec() {
     init {
 
         val bucket = "bucket"
         val objectPrefix = "prefix"
+
+        "Filters input file" {
+            val inputs = File.createTempFile("cdl-integration-test-", ".txt")
+            BufferedWriter(FileWriter(inputs)).use { writer ->
+                List(10) { month -> List(10) { day -> objectKey(month, day) } }.flatten().forEach(writer::write)
+            }
+
+            val s3Repository = S3Repository(mock(), bucket,
+                "corporate_storage/2021/07/02,corporate_storage/2021/07/03",
+                "db.database.collection",
+                inputs.path)
+
+            val actual = s3Repository.pathsFromInputFile()
+            actual shouldContainExactlyInAnyOrder listOf("corporate_storage/2021/07/02/database/collection/db.database.collection_1_2_3.jsonl.gz", "corporate_storage/2021/07/03/database/collection/db.database.collection_1_2_3.jsonl.gz")
+        }
 
         "Pages when there are truncated results" {
 
@@ -33,7 +51,7 @@ class S3RepositoryTest: StringSpec() {
                 } doReturnConsecutively listOf(truncatedResult1, truncatedResult2, finalResult)
             }
 
-            val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "db.database.collection")
+            val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "db.database.collection", "")
             val actual = s3Repository.allObjectSummaries()
 
             actual shouldBe listOf(objectSummaries1, objectSummaries2, objectSummaries3).flatten()
@@ -67,7 +85,7 @@ class S3RepositoryTest: StringSpec() {
                 } doReturnConsecutively listOf(result1, result2)
             }
 
-            val s3Repository = S3Repository(amazonS3, bucket, "prefix1,prefix2", "db.database.collection")
+            val s3Repository = S3Repository(amazonS3, bucket, "prefix1,prefix2", "db.database.collection", "")
             val actual = s3Repository.allObjectSummaries()
 
             actual shouldBe listOf(objectSummaries1, objectSummaries2).flatten()
@@ -84,7 +102,7 @@ class S3RepositoryTest: StringSpec() {
         "Filters out non-targeted topics" {
             val (targetedSummaries, filteredSummaries) = mixedSummaries(1)
             val amazonS3 = amazonS3(targetedSummaries, filteredSummaries)
-            val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "db.database.collection")
+            val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "db.database.collection", "")
             val actual = s3Repository.allObjectSummaries()
             actual shouldBe targetedSummaries
         }
@@ -92,7 +110,7 @@ class S3RepositoryTest: StringSpec() {
         "Filters out non-targeted topics with guids" {
             val (targetedSummaries, filteredSummaries) = mixedWithGuidSummaries(1)
             val amazonS3 = amazonS3(targetedSummaries, filteredSummaries)
-            val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "db.database.collection")
+            val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "db.database.collection", "")
             val actual = s3Repository.allObjectSummaries()
             actual shouldBe targetedSummaries
         }
@@ -100,11 +118,16 @@ class S3RepositoryTest: StringSpec() {
         "Doesn't filter if topic is blank" {
             val (targetedSummaries, filteredSummaries) = mixedSummaries(1)
             val amazonS3 = amazonS3(targetedSummaries, filteredSummaries)
-            val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "")
+            val s3Repository = S3Repository(amazonS3, bucket, objectPrefix, "", "")
             val actual = s3Repository.allObjectSummaries()
             actual shouldBe targetedSummaries + filteredSummaries
         }
     }
+
+    private fun objectKey(month: Int, day: Int) =
+        "corporate_storage/2021/${String.format("%02d", month)}/${
+            String.format("%02d",day)
+        }/database/collection/db.database.collection_1_2_3.jsonl.gz\n"
 
     private fun amazonS3(targetedSummaries: List<S3ObjectSummary>, filteredSummaries: List<S3ObjectSummary>): AmazonS3 =
             amazonS3(objectSummaryResult(1, false, targetedSummaries + filteredSummaries))

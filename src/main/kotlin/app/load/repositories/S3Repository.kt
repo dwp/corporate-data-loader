@@ -12,13 +12,23 @@ import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.ListObjectsV2Request
 import com.amazonaws.services.s3.model.S3ObjectSummary
+import java.io.File
 
 class S3Repository(private val amazonS3: AmazonS3,
                    private val bucket: String,
                    private val objectPrefixes: String,
-                   private val topicName: String) {
+                   private val topicName: String,
+                   private val inputListFile: String) {
 
-    fun allObjectSummaries()=
+    fun pathsFromInputFile(): List<String> =
+        if (inputListFile.isNotBlank()) {
+            File(inputListFile).readLines()
+                .filter { path -> objectPrefixes.split(",").filter(String::isNotBlank).any(path::contains) }
+        } else {
+            listOf()
+        }
+
+    fun allObjectSummaries() =
         objectPrefixes.split(",").filter(String::isNotBlank).map(::objectSummaries).flatten()
 
     private tailrec fun objectSummaries(prefix: String, objectSummaries: MutableList<S3ObjectSummary> = mutableListOf(), nextContinuationToken: String = ""):
@@ -45,7 +55,8 @@ class S3Repository(private val amazonS3: AmazonS3,
             }
 
     companion object {
-        fun connect() = S3Repository(amazonS3, S3Configuration.bucket, S3Configuration.prefix, S3Configuration.topicName)
+        fun connect() = S3Repository(amazonS3, S3Configuration.bucket, S3Configuration.prefix,
+            S3Configuration.topicName, S3Configuration.inputList)
         private val amazonS3: AmazonS3 by lazy {
             if (AwsConfiguration.useLocalStack) {
                 AmazonS3ClientBuilder.standard().run {
