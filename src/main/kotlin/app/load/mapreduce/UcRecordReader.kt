@@ -17,9 +17,7 @@ import org.apache.hadoop.mapreduce.RecordReader
 import org.apache.hadoop.mapreduce.TaskAttemptContext
 import org.apache.hadoop.mapreduce.lib.input.FileSplit
 import org.slf4j.LoggerFactory
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.LineNumberReader
+import java.io.*
 import java.util.zip.GZIPInputStream
 import kotlin.streams.toList
 import kotlin.time.ExperimentalTime
@@ -30,18 +28,27 @@ class UcRecordReader: RecordReader<LongWritable, Text>() {
         (split as FileSplit).path.let { path ->
             try {
                 logger.info("Starting split '${path}', target table '${context.configuration["hbase.table"]}'")
-                path.getFileSystem(context.configuration).let { fs ->
-                    input = BufferedReader(InputStreamReader(GZIPInputStream(fs.open(path))))
+                path.getFileSystem(context.configuration).let { fs: FileSystem ->
+                    input = with (ByteArrayOutputStream()) {
+                        use { target -> fs.open(path).use { source -> source.copyTo(target) } }
+                        BufferedReader(InputStreamReader(GZIPInputStream(ByteArrayInputStream(this.toByteArray()))))
+                    }
                     currentFileSystem = fs
                     currentPath = path
                 }
             } catch (e: Exception) {
-                logger.error("Failed to initialize split, target table '${context.configuration["hbase.table"]}': '${e.message}'.", e)
+                logger.error("Failed to initialize split '$path', target table '${context.configuration["hbase.table"]}': '${e.message}'.", e)
                 context.getCounter(Counters.DATAWORKS_FAILED_SPLIT_COUNTER).increment(1)
             }
         }
 
-    override fun nextKeyValue() = hasNext(input?.readLine())
+    override fun nextKeyValue() =
+        try {
+            hasNext(input?.readLine())
+        } catch (e: Exception) {
+            logger.error("Failed to read from split '$currentPath': '${e.message}'.", e)
+            throw e
+        }
 
     @ExperimentalTime
     override fun close() {
