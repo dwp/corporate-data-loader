@@ -22,7 +22,6 @@ class UcMapper: Mapper<LongWritable, Text, ImmutableBytesWritable, KeyValue>() {
                 hKey(hbaseKey).let { hkey ->
                     context.write(hkey, keyValue(hkey, json, validBytes))
                     context.getCounter(Counters.DATAWORKS_SUCCEEDED_RECORD_COUNTER).increment(1)
-                    logger.info("Successfully mapped '$ordered', target table '${context.configuration[targetTableKey]}'")
                 }
             } ?: run {
                 logger.error("Failed to parse id from '$json', target table '${context.configuration[targetTableKey]}")
