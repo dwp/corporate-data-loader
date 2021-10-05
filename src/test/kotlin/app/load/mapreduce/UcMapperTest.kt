@@ -56,7 +56,6 @@ class UcMapperTest : StringSpec({
         val bodyCaptor = argumentCaptor<KeyValue>()
         verify(context, times(1)).write(idCaptor.capture(), bodyCaptor.capture())
         verify(context, times(1)).getCounter(Counters.DATAWORKS_SUCCEEDED_RECORD_COUNTER)
-        verify(context, times(1)).configuration
         verifyNoMoreInteractions(context)
         idCaptor.firstValue.get() shouldBe id
         with (bodyCaptor.firstValue) {
