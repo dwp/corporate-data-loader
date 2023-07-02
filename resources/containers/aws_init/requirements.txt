@@ -1,5 +1,5 @@
 attrs==20.2.0
-awscli==1.18.145
+awscli==1.27.90
 awscli-local==0.8
 boto3==1.15.3
 boto3-stubs==1.15.3.0
